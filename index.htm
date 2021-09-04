@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        let game = {
+            player: prompt('Введите имя(ник), после ввода игра будет начата!'),
+            level: 1,
+            width: 500,
+            height: 400,
+            create(){
+                document.getElementsByTagName('body')[0].innerHTML += '<div id="game"></div>'
+                this.elem = document.getElementById('game')
+                this.show()
+            },
+            show(){
+                document.getElementsByTagName('body')[0].style.backgroundColor = "black"
+                this.elem.style.width = this.width + 'px'
+                this.elem.style.height = this.height + 'px'
+                this.elem.style.border = "1px solid #2d853c"
+                this.elem.style.boxShadow = "0 0 10px #2d853c"
+                this.elem.style.position = "relative"
+                this.elem.style.margin = "20px auto"
+            },
+            over(){
+                clearInterval(start)
+                clearInterval(time)
+                alert('Game Over!')
+                records.elem.innerHTML += '<p> Player: '+ game.player + '; score: ' + scoreCount.score + '</p>'
+                records.show()
+            }
+        }
+        let ball = {
+            radius: 20,
+            x: 0,
+            y: 0,
+            dy: -2,
+            dx: 2,
+            create(){
+                game.elem.innerHTML += '<div id="ball"></div>'
+                let elem = document.getElementById('ball')
+                this.y = game.height - bar.height * 1.5 - ball.radius * 2
+                this.show()
+            },
+            show(){
+                let elem = document.getElementById('ball')
+                elem.style.width = this.radius * 2 + 'px'
+                elem.style.height = this.radius * 2 + 'px'
+                elem.style.position = 'absolute'
+                elem.style.top = this.y + 'px'
+                elem.style.left = this.x + 'px'
+                elem.style.backgroundColor = '#c41854'
+                elem.style.borderRadius = "50%"
+                elem.style.boxShadow = "0 0 20px #c41854"
+            },
+            move(){
+                if(ball.y < 0 || ball.y >= game.height - ball.radius * 2 || collision(bar)) ball.dy *= -1
+                if(ball.x < 0 || ball.x > game.width - ball.radius * 2) ball.dx *= -1
+                if(ball.y >= game.height - ball.radius * 2) game.over()
+                bricks.check()
+                ball.y += ball.dy
+                ball.x += ball.dx
+                ball.show()
+            }
+        }
+
+        let bar = {
+            width: 140,
+            height: 10,
+            x: 0,
+            dx: 5,
+            create(){
+                game.elem.innerHTML += '<div id="bar"></div>'
+                this.y = game.height - this.height * 1.5
+                this.show()
+            },
+            show(){
+                let elem = document.getElementById('bar')
+                elem.style.width = this.width + 'px'
+                elem.style.height = this.height + 'px'
+                elem.style.position = 'absolute'
+                elem.style.top = this.y + 'px'
+                elem.style.left = this.x + 'px'
+                elem.style.border = '1px solid #d47496'
+                elem.style.boxShadow = '0 0 5px #d47496'
+            },
+            move(x){
+                if(x < 0) bar.x = 0
+                if(x > game.width - bar.width) bar.x = game.width - bar.width
+                bar.show()
+            }
+        }
+        let bricks = {
+            stroka: 3,
+            ryad: 5,
+            space: 10,
+            bricksArr: [],
+            create(){
+                this.width = (game.width - (this.ryad + 1) * this.space) / this.ryad
+                this.height = this.width / 4
+                for(let s = 0; s < this.stroka; s++){
+                    for(let r = 0; r < this.ryad; r++){
+                        let brick = new function(){
+                            this.color = 'red',
+                            this.width = bricks.width
+                            this.height = bricks.height
+                            this.x = this.width * r + (r + 1) * bricks.space
+                            this.y = this.height * s + (s + 1) * bricks.space
+                            if(game.level == 1) this.status = true
+                            if(game.level == 2){
+                                this.color = 'blue'
+                                if(s == 0 || r >= s){
+                                    this.status = true
+                                }else this.status = false
+                            }
+                            if(game.level == 3){
+                                this.color = 'yellow'
+                                if(s == 0 || r > 0 && r < bricks.ryad - 1 && s <= 2 || s == 3 && r == 2){
+                                    this.status = true
+                                }else this.status = false
+                            }
+                        }
+                        game.elem.innerHTML += '<div id="brick'+ (s * this.ryad + r) +'"></div>'
+                        this.bricksArr.push(brick)
+                    }
+                }
+                this.show()
+            },
+            show(){
+                    for(let i = 0; i < this.ryad * this.stroka; i++){
+                    let brick = this.bricksArr[i]
+                    let elem = document.getElementById('brick' + i)
+                    if(brick.status){
+                        elem.style.width = brick.width + 'px'
+                        elem.style.height = brick.height + 'px'
+                        elem.style.position = 'absolute'
+                        elem.style.top = brick.y + 'px'
+                        elem.style.left = brick.x + 'px'
+                        elem.style.border = '1px solid ' + brick.color
+                        elem.style.boxShadow = '0 0 5px ' + brick.color
+                        elem.style.display = 'block'
+                    }else elem.style.display = 'none'
+                }
+            },
+            check(){
+                for(let i = 0; i < this.stroka * this.ryad; i++){
+                    let brick = this.bricksArr[i]
+                    if(brick.status && collision(brick)) {
+                        brick.status = false
+                        ball.dy *= -1
+                        scoreCount.score += 10
+                        scoreCount.show()
+                    }
+                    this.show()
+                }
+                if(this.bricksArr.filter(i => i.status == false).length == this.bricksArr.length) {
+                    if (game.level < 3 && confirm('Wanna next level?')){
+                        if(ball.dx < 0) ball.dx -= 1; else ball.dx += 1
+                        if(ball.dy < 0) ball.dy -= 1; else ball.dy += 1
+                        ++bricks.stroka
+                        ++game.level
+                        bricks.bricksArr = []
+                        bricks.create()
+                        ball.y = game.height - bar.height * 1.5 - ball.radius * 2
+                    }else{
+                        alert('You win!')
+                        clearInterval(start)
+                        clearInterval(time)
+                    }
+                    records.elem.innerHTML += '<p> Player: '+ game.player + '; score: ' + scoreCount.score + '</p>'
+                    records.show()
+                }
+            }
+        }
+        let timer = {
+            width: 200,
+            height: 50,
+            create(){
+                game.elem.innerHTML += '<div id="timer"></div>'
+                this.elem = document.getElementById('timer')
+                this.show()
+            },
+            show(){
+                this.elem.style.width = this.width + 'px'
+                this.elem.style.height = this.height + 'px'
+                this.elem.style.border = "1px solid #000"
+                this.elem.style.position = "absolute"
+                this.elem.style.top = 20 + game.height + 'px'
+                this.elem.style.boxShadow = "0 0 10px #fff"
+                this.elem.style.display = 'flex'
+                this.elem.style.justifyContent = 'space-around'
+            }
+        }
+
+        let minutes = {
+            min: 0,
+            create(){
+                timer.elem.innerHTML += '<p id="min"></p>'
+                this.show()
+            },
+            show(){
+                this.elem = document.getElementById('min')
+                this.elem.innerHTML = this.min + ' min'
+                this.elem.style.color = '#fff'
+            }
+        }
+
+        let seconds = {
+            sec: 0,
+            create(){
+                timer.elem.innerHTML += '<p id="sec"></p>'
+                this.show()
+            },
+            show(){
+                this.elem = document.getElementById('sec')
+                this.elem.innerHTML = this.sec + ' sec'
+                this.elem.style.color = '#fff'
+            },
+            secTimer(){
+                seconds.sec++
+                seconds.show()
+                if(seconds.sec > 59) {
+                    seconds.sec = 0
+                    minutes.min++
+                    minutes.show()
+                }
+                
+            }
+        }
+        let score = {
+            width: game.width - timer.width - 20,
+            height: timer.height,
+            create(){
+                game.elem.innerHTML += '<div id="scoreTable"></div>'
+                this.show()
+            },
+            show(){
+                this.elem = document.getElementById('scoreTable')
+                this.elem.style.width = this.width + 'px'
+                this.elem.style.height = this.height + 'px'
+                this.elem.style.border = "1px solid #000"
+                this.elem.style.boxShadow = "0 0 10px #fff"
+                this.elem.style.position = 'absolute'
+                this.elem.style.right = 0
+                this.elem.style.top = 20 + game.height + 'px'
+            }
+        }
+
+        let scoreCount = {
+            score: 0,
+            create(){
+                score.elem.innerHTML += '<p id="score"></p>'
+                this.show()
+            },
+            show(){
+                this.elem = document.getElementById('score')
+                this.elem.innerHTML = 'Score: ' + this.score
+                this.elem.style.textAlign = 'center'
+                this.elem.style.color = '#fff'
+            }
+        }
+
+        let menuBoard = {
+            width: 200,
+            height: game.height / 2,
+            create(){
+                game.elem.innerHTML += '<div id="scoreBoard"></div>'
+                this.elem = document.getElementById('scoreBoard')
+                this.elem.innerHTML += '<button onclick="gameStart()" id="btn">Start</button>'
+                this.btnElem = document.getElementById('btn')
+                this.show()
+            },
+            show(){
+                this.elem.style.width = this.width + 'px'
+                this.elem.style.height = this.height + 'px'
+                this.elem.style.position = 'absolute'
+                this.elem.style.left = game.width + 10 + 'px'
+                this.elem.style.top = '-1px'
+                this.elem.style.border = "1px solid #2d853c"
+                this.elem.style.boxShadow = "0 0 10px #2d853c"
+
+                this.btnElem.style.width = this.width + 'px'
+                this.btnElem.style.height= '30px'
+                this.btnElem.style.position = 'absolute'
+                this.btnElem.style.top = '40%'
+                this.btnElem.style.border = "1px solid #2d853c"
+                this.btnElem.style.backgroundColor = "black"
+                this.btnElem.style.color = "#fff"
+                this.btnElem.style.cursor = "pointer"
+
+            }
+        }
+
+        let records = {
+            width: 200,
+            height: game.height / 2,
+            create(){
+                game.elem.innerHTML += '<div id="records">Record list: </div>'
+                this.show()
+            },
+            show(){
+                this.elem = document.getElementById('records')
+                this.elem.style.width = this.width + 'px'
+                this.elem.style.height = this.height - 10 + 'px'
+                this.elem.style.color = "#fff"
+                this.elem.style.textAlign = 'center'
+                this.elem.style.position = 'absolute'
+                this.elem.style.left = game.width + 10 + 'px'
+                this.elem.style.top = game.height / 2 + 10 + 'px'
+                this.elem.style.border = "1px solid #2d853c"
+                this.elem.style.boxShadow = "0 0 10px #2d853c"
+            }
+        }
+
+        game.create()
+        ball.create()
+        bar.create()
+        bricks.create()
+        timer.create()
+        minutes.create()
+        seconds.create()
+        score.create()
+        scoreCount.create()
+        menuBoard.create()
+        records.create()
+
+        game.elem.onmousemove = function(e){
+            bar.x = e.pageX - game.elem.offsetLeft - bar.width / 2
+            bar.move(bar.x)
+        }
+        
+        let start = setInterval(ball.move, 16)
+        let time = setInterval(seconds.secTimer, 1000)
+
+        document.onkeydown = function(e){
+            if(e.keyCode == 39) bar.x += bar.dx
+            if(e.keyCode == 37) bar.x -= bar.dx
+            bar.move(bar.x)
+        }
+        function collision(obj){
+            return(
+                ball.x > obj.x - 2 * ball.radius &&
+                ball.x < obj.x + obj.width &&
+                ball.y > obj.y - 2 * ball.radius &&
+                ball.y < obj.y + obj.height
+            )
+        }
+    </script>
+</body>
+</html>
